@@ -1,0 +1,19 @@
+# This is for a generic Linux build
+
+HOST_CPU = 
+DELIM = '
+PiOS32 = 0
+LINUX = 1
+MSYS2 = 0
+MINGW = 0
+EXTRA_DEFINES = 
+EXTRA_CHKS =
+EXTRA_LIBS = 
+DBG = 
+OPT = -O2
+CC = gcc
+ECHO = /bin/echo -e
+RM = rm -f 
+
+include Makefile.common
+

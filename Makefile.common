@@ -1,0 +1,79 @@
+# Splitter Makefile
+# 20241004 - Dave Shepperd
+#
+
+INCS = -I.
+
+MAKEFILE = Makefile.common
+
+EXE =
+ifeq ($(MINGW),1)
+	EXE = .exe
+endif
+ifeq ($(MSYS2),1)
+	EXE = .exe
+endif
+
+DEFINES = -DLINUX -D_LANGUAGE_C -D_ISOC99_SOURCE -D_XOPEN_SOURCE -DHAS_STRERROR -D_GNU_SOURCE
+DEFINES += $(EXTRA_DEFINES)
+
+CHKS = -Wall -pedantic -ansi -Wno-char-subscripts
+CHKS += $(EXTRA_CHKS)
+
+STD = -std=c99
+CFLAGS = $(DEFINES) $(HOST_CPU) $(INCS) $(DBG) $(OPT) $(CHKS) $(STD)
+LFLAGS = $(HOST_CPU) $(DBG) $(EXTRA_LIBS)
+
+C = $(CC) -c $(CFLAGS)
+D = $(CC) -c $(CFLAGS)
+L = $(CC) $(CFLAGS)
+
+.SILENT:
+
+#		*Explicit Rules*
+
+ifeq ($(MINGW),1)
+
+%.o : %.c
+	$(ECHO) $(DELIM)    Compiling $<...$(DELIM)
+	$C -o $@ $<
+
+else
+
+%.o : %.c
+	$(ECHO) $(DELIM)    Compiling $<...$(DELIM);\
+	rm -f $(basename $@).err $(basename $@).warn;\
+	$C -o $@ $< > $(basename $@).err 2>&1;\
+	if [ $$? -ne 0 ]; then\
+	    $(ECHO) $(DELIM)Errors in $(basename $@).err$(DELIM);\
+	    cat $(basename $@).err;\
+	else\
+	    if [ -s $(basename $@).err ]; then\
+	        mv $(basename $@).err $(basename $@).warn;\
+	        $(ECHO) $(DELIM)Warnings in $(basename $@).warn$(DELIM);\
+	        cat $(basename $@).warn;\
+            else\
+	        rm -f $(basename $@).err;\
+	    fi;\
+	fi
+
+endif    
+
+%.d : %.c
+	@$(ECHO)  $(DELIM)    Making dependencies on $< ...$(DELIM)
+	@$(CC) $(CFLAGS) -M $< >> depends
+
+%.E : %.c
+	$(ECHO) $(DELIM)    Compiling $< to $@ ...$(DELIM)
+	$(CC) $(CFLAGS) -E $< > $@
+
+default: splitter$(EXE)
+
+splitter$(EXE): splitter.o $(MAKEFILE)
+	$(ECHO)  $(DELIM)    linking $@ ...$(DELIM)
+	$L $(LFLAGS) -o $@ $<
+
+splitter.o: splitter.c version.h $(MAKEFILE)
+
+clean:
+	$(RM) splitter.o splitter.map splitter$(EXE) *.warn *.err
